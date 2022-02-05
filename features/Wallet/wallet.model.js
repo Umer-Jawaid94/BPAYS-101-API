@@ -7,9 +7,13 @@ const Wallet = new Schema({
     type: Schema.Types.ObjectId,
     ref: 'user'
   },
-  credits: {
+  amount: {
     type: Number,
     default: 0
+  },
+  isDeleted: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true

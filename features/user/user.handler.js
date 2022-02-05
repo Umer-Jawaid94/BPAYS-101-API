@@ -4,6 +4,7 @@ const passport = require('passport');
 const User = require('./user.model');
 const { createWallet, updateWallet, getWallet, deleteWallet } = require('../Wallet/wallet.controller');
 const { getAllUsers, getUserbyFilter, updateUser, updateUserWithWallet, deleteUser } = require('./user.controller');
+const { createActivity } = require('../PaymentActivities/paymentActivity.controller');
 
 
 exports.register = (req, res, next) => {
@@ -26,10 +27,12 @@ exports.register = (req, res, next) => {
       .then(async () => {
         if (user.role !== 'admin') {
           if (user.role === 'subDistributor') {
+            await createActivity({ creator: req._user, user, amount: req.body.amount, type: 'created', role: req._user.role })
+            await createActivity({ creator: req._user, user, amount: req.body.amount, type: 'created', role: user.role })
             const dWallet = await getWallet({ user: req.body.distributor })
             if (dWallet) {
-              await updateWallet({ _id: dWallet._id }, { credits: dWallet.credits - req.body.credits })
-              const wallet = await createWallet(user._id, req.body.credits)
+              await updateWallet({ _id: dWallet._id }, { amount: dWallet.amount - req.body.amount })
+              const wallet = await createWallet(user._id, req.body.amount)
               let newUser = await updateUser({ _id: user._id }, { wallet: wallet._id })
               return res.json({
                 message: 'success register',
@@ -41,11 +44,12 @@ exports.register = (req, res, next) => {
           if (user.role === 'dealer') {
             // console.log('ok')
             const dWallet = await getWallet({ user: req.body.subDistributor })
-
+            await createActivity({ creator: req._user, user, amount: req.body.amount, type: 'created', role: req._user.role })
+            await createActivity({ creator: req._user, user, amount: req.body.amount, type: 'created', role: user.role })
             // console.log(dWallet)
             if (dWallet) {
-              await updateWallet({ _id: dWallet._id }, { credits: dWallet.credits - req.body.credits })
-              const wallet = await createWallet(user._id, req.body.credits)
+              await updateWallet({ _id: dWallet._id }, { amount: dWallet.amount - req.body.amount })
+              const wallet = await createWallet(user._id, req.body.amount)
               let newUser = await updateUser({ _id: user._id }, { wallet: wallet._id })
               return res.json({
                 message: 'success register',
@@ -54,9 +58,9 @@ exports.register = (req, res, next) => {
               });
             }
           }
-          const wallet = await createWallet(user._id, req.body.credits)
+          const wallet = await createWallet(user._id, req.body.amount)
           let newUser = await updateUser({ _id: user._id }, { wallet: wallet._id })
-
+          await createActivity({ creator: req._user, user, amount: req.body.amount, type: 'created', role: user.role })
           return res.json({
             message: 'success register',
             success: true,
@@ -120,6 +124,12 @@ exports.getAllUsers = async (req, res, next) => {
         data
       })
     }
+    if (req._user.role === 'subDistributor') {
+      const data = await getAllUsers({ role: req.query.role, subDistributor: req._user._id });
+      return res.json({
+        data
+      })
+    }
     const data = await getAllUsers({ role: req.query.role });
     return res.json({
       data
@@ -153,9 +163,9 @@ exports.verifyUser = async (req, res, next) => {
 exports.updateUser = async (req, res, next) => {
   try {
     const data = { ...req.body }
-    if (req.body.credits) {
-      delete data.credits
-      await updateWallet({ user: req.params.id }, { credits: req.body.credits })
+    if (req.body.amount) {
+      delete data.amount
+      await updateWallet({ user: req.params.id }, { amount: req.body.amount })
       let user = await updateUser({ _id: req.params.id }, data)
       return res.json({
         data: user
@@ -180,7 +190,7 @@ exports.deleteUser = async (req, res, next) => {
       if (user.role === 'dealer') {
         const userWallet = await getWallet({ _id: user.wallet })
         const distributorWallet = await getWallet({ user: user.subDistributor })
-        await updateWallet({ user: user.subDistributor }, { credits: distributorWallet.credits + userWallet.credits })
+        await updateWallet({ user: user.subDistributor }, { amount: distributorWallet.amount + userWallet.amount })
       }
       if (user.role === 'subDistributor') {
         await deleteSubDistributor(user)
@@ -214,13 +224,41 @@ const deleteSubDistributor = (sd) => {
     let total = 0
     let $promises = []
     for (let i = 0; i < subUsers.length; i++) {
-      total = total + subUsers[i].wallet.credits
+      total = total + subUsers[i].wallet.amount
       $promises.push(deleteUser({ _id: subUsers[i]._id }))
       $promises.push(deleteWallet({ user: subUsers[i]._id }))
     }
     await Promise.all($promises)
-    await updateWallet({ user: sd.distributor._id }, { credits: distributorWallet.credits + userWallet.credits + total })
+    await updateWallet({ user: sd.distributor._id }, { amount: distributorWallet.amount + userWallet.amount + total })
     await deleteWallet({ _id: sd.wallet._id })
     resolve()
   })
+}
+
+exports.registerByAdmin = (req, res, next) => {
+  User.register(new User({
+    email: req.body.email.toLowerCase(),
+    name: req.body.name.toLowerCase(),
+    phone: req.body.phone,
+    role: req.body.role,
+  }), req.body.password, async (err, user) => {
+    if (err) {
+      console.log('error', err)
+      if (err.name === 'UserExistsError') {
+        return next(Boom.badRequest('already exists'));
+      }
+      return next(Boom.badImplementation('internal server error'));
+    }
+    auth.getLoginData(user, null)
+      .then(async () => {
+        return res.json({
+          message: 'success register',
+          success: true,
+          data: user
+        });
+      })
+      .catch(err => {
+        return next(Boom.badImplementation('error', err));
+      });
+  });
 }

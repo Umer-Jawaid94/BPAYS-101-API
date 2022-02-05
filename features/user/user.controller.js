@@ -4,7 +4,7 @@ const Users = require("./user.model");
 exports.getAllUsers = (filter = {}) => {
   try {
     // console.log(filter)
-    return Users.find(filter).populate('wallet distributor subDistributor');
+    return Users.find({ ...filter, isDeleted: false }).populate('wallet distributor subDistributor');
   } catch (error) {
     console.log('error======', error)
     // return Boom.badImplementation('no user found')
@@ -13,7 +13,7 @@ exports.getAllUsers = (filter = {}) => {
 
 exports.getUserbyFilter = (filter = {}) => {
   try {
-    return Users.findOne(filter).populate('wallet distributor subDistributor');
+    return Users.findOne({ ...filter, isDeleted: false }).populate('wallet distributor subDistributor');
   } catch (error) {
     return Boom.badImplementation('no user found')
   }
@@ -40,7 +40,7 @@ exports.updateUserWithWallet = (filter = {}, data, walletId) => {
 
 exports.deleteUser = (filter = {}) => {
   try {
-    return Users.findOneAndDelete(filter);
+    return Users.findOneAndUpdate(filter, { isDeleted: true });
   } catch (error) {
     return Boom.badImplementation('no user found')
   }
