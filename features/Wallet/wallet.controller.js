@@ -3,9 +3,9 @@ const Boom = require('boom');
 
 const Wallet = require('./wallet.model');
 
-exports.createWallet = (user, credits) => {
+exports.createWallet = (user, amount) => {
   try {
-    return Wallet.create({ user, credits });
+    return Wallet.create({ user, amount });
   } catch (error) {
     return Boom.badImplementation('Something went wrong')
   }
@@ -16,13 +16,13 @@ exports.updateWallet = (filter = {}, data) => {
     // console.log(filter, data)
     return Wallet.findOneAndUpdate(filter, data, { new: true });
   } catch (error) {
-    return Boom.badImplementation('Something went wrong')
+    return Boom.badImplementation(error)
   }
 }
 
 exports.getWallet = (filter = {}) => {
   try {
-    return Wallet.findOne(filter);
+    return Wallet.findOne({ ...filter, isDeleted: false });
   } catch (error) {
     return Boom.badImplementation('Something went wrong')
   }
@@ -31,7 +31,7 @@ exports.getWallet = (filter = {}) => {
 
 exports.deleteWallet = (filter = {}) => {
   try {
-    return Wallet.findOneAndDelete(filter);
+    return Wallet.findOneAndDelete(filter, { isDeleted: true });
   } catch (error) {
     return Boom.badImplementation('Something went wrong')
   }

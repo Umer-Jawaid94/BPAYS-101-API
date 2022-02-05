@@ -11,7 +11,7 @@ exports.registerUser = Joi.object().keys({
     role: Joi.string().required(),
     phone: Joi.string().allow(''),
     password: Joi.string().required(),
-    credits: Joi.number().allow(0),
+    amount: Joi.number().allow(0),
     distributor: Joi.objectId().optional(),
     subDistributor: Joi.objectId().optional(),
   })
@@ -26,6 +26,6 @@ exports.updateUser = Joi.object().keys({
     name: Joi.string().required(),
     email: Joi.string().required(),
     phone: Joi.string().allow(''),
-    credits: Joi.number().allow(0)
+    amount: Joi.number().allow(0)
   })
 });

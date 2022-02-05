@@ -18,7 +18,7 @@ const User = new Schema({
   },
   role: {
     type: String,
-    enum: ['admin', 'distributor', 'subDistributor', 'dealer']
+    enum: ['admin', 'distributor', 'subDistributor', 'dealer', 'processor']
   },
   distributor: {
     type: Schema.Types.ObjectId,
@@ -29,6 +29,10 @@ const User = new Schema({
     type: Schema.Types.ObjectId,
     ref: 'User',
     default: null
+  },
+  isDeleted: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true

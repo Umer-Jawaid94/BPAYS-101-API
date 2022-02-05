@@ -19,5 +19,15 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+app.get(`/health`, function (req, res) {
+  // TOD Ping DB
+  res.json({
+    message: 'Health Check Complete',
+    success: true,
+    data : {
+      env : process.env.NODE_ENV
+    }
+  });
+});
 
 module.exports = app;

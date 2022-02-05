@@ -18,22 +18,22 @@ exports.updateWallet = async (req, res, next) => {
       } else {
         distributorWallet = await getWallet({ user: user.distributor })
       }
-      const updatedWallet = await updateWallet({ _id: userWallet._id }, { credits: userWallet.credits + req.body.credits })
+      const updatedWallet = await updateWallet({ _id: userWallet._id }, { amount: userWallet.amount + req.body.amount })
       // console.log(distributorWallet)
-      await updateWallet({ _id: distributorWallet._id }, { credits: distributorWallet.credits - req.body.credits })
+      await updateWallet({ _id: distributorWallet._id }, { amount: distributorWallet.amount - req.body.amount })
       if (req._user.role === 'admin') {
-        if (req.body.credits < 0) {
-          await createActivity({ creator: req._user, user, credits: req.body.credits, type: 'deducted', role: user.role })
+        if (req.body.amount < 0) {
+          await createActivity({ creator: req._user, user, amount: req.body.amount, type: 'deducted', role: user.role })
         } else {
-          await createActivity({ creator: req._user, user, credits: req.body.credits, type: 'added', role: user.role })
+          await createActivity({ creator: req._user, user, amount: req.body.amount, type: 'added', role: user.role })
         }
       } else {
-        if (req.body.credits < 0) {
-          await createActivity({ creator: req._user, user, credits: req.body.credits, type: 'deducted', role: req._user.role })
-          await createActivity({ creator: req._user, user, credits: req.body.credits, type: 'deducted', role: user.role })
+        if (req.body.amount < 0) {
+          await createActivity({ creator: req._user, user, amount: req.body.amount, type: 'deducted', role: req._user.role })
+          await createActivity({ creator: req._user, user, amount: req.body.amount, type: 'deducted', role: user.role })
         } else {
-          await createActivity({ creator: req._user, user, credits: req.body.credits, type: 'added', role: req._user.role })
-          await createActivity({ creator: req._user, user, credits: req.body.credits, type: 'received', role: user.role })
+          await createActivity({ creator: req._user, user, amount: req.body.amount, type: 'added', role: req._user.role })
+          await createActivity({ creator: req._user, user, amount: req.body.amount, type: 'received', role: user.role })
         }
       }
       user.wallet = updatedWallet
