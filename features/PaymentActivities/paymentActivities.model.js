@@ -10,7 +10,7 @@ const paymentActivities = new Schema({
     type: Schema.Types.ObjectId,
     ref: 'User'
   },
-  credits: Number,
+  amount: Number,
   type: String,
   role: {
     type: String
@@ -18,4 +18,4 @@ const paymentActivities = new Schema({
 }, {
   timestamps: true
 });
-module.exports = mongoose.model('paymentActivities', paymentActivities);
+module.exports = mongoose.model('activities', paymentActivities);
