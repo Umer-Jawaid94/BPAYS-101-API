@@ -1,4 +1,4 @@
-name: DEPLOY WALKOPS API
+name: DEPLOY BPAYS101 API
 
 on:
   push:
@@ -20,8 +20,7 @@ jobs:
           AWS_ACCESS_KEY_ID: AKIASZBTZPNX42D5IYOM
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: us-east-1
-          S3_BUCKET: elasticbeanstalk-us-east-1-833363181218
-          APPLICATION_NAME: walkops
+          APPLICATION_NAME: BPAYS-101-API
           # SUDOFY_SSS_API_TOKEN: ${{ secrets.SUDOFY_SSS_API_TOKEN }}
 
       # - name: Install Sentry CLI
@@ -56,10 +55,6 @@ jobs:
       - name: Set custom environment variables
         run: node .github/scripts/setupEnv.js
 
-      - name: Adding APM config files for core api
-        run: node .github/scripts/setupAPMConfig.js
-        env:
-          ELK_APM_NAME: "walkops"    
 
       - name: Remove node modules
         run: rm -rf node_modules  
