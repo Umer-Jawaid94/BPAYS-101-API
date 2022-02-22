@@ -7,13 +7,14 @@ exports.registerUser = Joi.object().keys({
   params: {},
   body: Joi.object().keys({
     name: Joi.string().required(),
-    email: Joi.string().required(),
     role: Joi.string().required(),
-    phone: Joi.string().allow(''),
+    phone: Joi.number().allow(0),
     password: Joi.string().required(),
     amount: Joi.number().allow(0),
     distributor: Joi.objectId().optional(),
     subDistributor: Joi.objectId().optional(),
+    username: Joi.string().required(),
+    discountRate: Joi.number().allow(0)
   })
 });
 
@@ -24,8 +25,8 @@ exports.updateUser = Joi.object().keys({
   },
   body: Joi.object().keys({
     name: Joi.string().required(),
-    email: Joi.string().required(),
-    phone: Joi.string().allow(''),
-    amount: Joi.number().allow(0)
+    phone: Joi.number().allow(0),
+    amount: Joi.number().allow(0),
+    discountRate: Joi.number().allow(0)
   })
 });

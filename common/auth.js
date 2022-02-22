@@ -7,7 +7,7 @@ exports.getLoginData = function (user, expiry) {
     try {
       let userData = {
         _id: user._doc._id,
-        email: user._doc.email,
+        username: user._doc.username,
         role: user._doc.role,
         name: user._doc.name
       };
