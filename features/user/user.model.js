@@ -3,14 +3,15 @@ const passportLocalMongoose = require('passport-local-mongoose');
 
 const Schema = mongoose.Schema;
 const User = new Schema({
-  email: {
+  username: {
     type: String
   },
+  password: String,
   name: {
     type: String
   },
   phone: {
-    type: String
+    type: Number
   },
   wallet: {
     type: Schema.Types.ObjectId,
@@ -33,12 +34,13 @@ const User = new Schema({
   isDeleted: {
     type: Boolean,
     default: false
-  }
+  },
+  discountRate: Number
 }, {
   timestamps: true
 });
 User.plugin(passportLocalMongoose, {
-  usernameField: 'email',
+  usernameField: 'username',
   usernameLowerCase: true
 });
 module.exports = mongoose.model('User', User);

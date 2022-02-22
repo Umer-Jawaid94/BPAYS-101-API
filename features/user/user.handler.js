@@ -7,14 +7,22 @@ const { getAllUsers, getUserbyFilter, updateUser, updateUserWithWallet, deleteUs
 const { createActivity } = require('../PaymentActivities/paymentActivity.controller');
 
 
-exports.register = (req, res, next) => {
+exports.register = async (req, res, next) => {
+  if (!req.body.distributor) {
+    const user = await getUserbyFilter({ _id: req.body.subDistributor })
+    const distributor = await getUserbyFilter({ _id: user.distributor })
+    console.log(distributor)  
+    req.body.distributor = distributor._id
+  }
   User.register(new User({
-    email: req.body.email.toLowerCase(),
+    username: req.body.username.toLowerCase(),
     name: req.body.name.toLowerCase(),
     phone: req.body.phone,
     role: req.body.role,
     distributor: req.body.distributor,
-    subDistributor: req.body.subDistributor
+    subDistributor: req.body.subDistributor,
+    password: req.body.password,
+    discountRate: req.body.discountRate
   }), req.body.password, async (err, user) => {
     if (err) {
       console.log('error', err)
@@ -27,8 +35,8 @@ exports.register = (req, res, next) => {
       .then(async () => {
         if (user.role !== 'admin') {
           if (user.role === 'subDistributor') {
-            await createActivity({ creator: req._user, user, amount: req.body.amount, type: 'created', role: req._user.role })
-            await createActivity({ creator: req._user, user, amount: req.body.amount, type: 'created', role: user.role })
+            await createActivity({ creator: req._user._id, user, amount: req.body.amount, type: 'created', role: req._user.role })
+            await createActivity({ creator: req._user._id, user, amount: req.body.amount, type: 'created', role: user.role })
             const dWallet = await getWallet({ user: req.body.distributor })
             if (dWallet) {
               await updateWallet({ _id: dWallet._id }, { amount: dWallet.amount - req.body.amount })
@@ -43,9 +51,12 @@ exports.register = (req, res, next) => {
           }
           if (user.role === 'dealer') {
             // console.log('ok')
+            if (!req.body.distributor) {
+              const distributor = await getUserbyFilter({})
+            }
             const dWallet = await getWallet({ user: req.body.subDistributor })
-            await createActivity({ creator: req._user, user, amount: req.body.amount, type: 'created', role: req._user.role })
-            await createActivity({ creator: req._user, user, amount: req.body.amount, type: 'created', role: user.role })
+            await createActivity({ creator: req._user._id, user, amount: req.body.amount, type: 'created', role: req._user.role })
+            await createActivity({ creator: req._user._id, user, amount: req.body.amount, type: 'created', role: user.role })
             // console.log(dWallet)
             if (dWallet) {
               await updateWallet({ _id: dWallet._id }, { amount: dWallet.amount - req.body.amount })
@@ -60,7 +71,7 @@ exports.register = (req, res, next) => {
           }
           const wallet = await createWallet(user._id, req.body.amount)
           let newUser = await updateUser({ _id: user._id }, { wallet: wallet._id })
-          await createActivity({ creator: req._user, user, amount: req.body.amount, type: 'created', role: user.role })
+          await createActivity({ creator: req._user._id, user, amount: req.body.amount, type: 'created', role: user.role })
           return res.json({
             message: 'success register',
             success: true,
@@ -237,10 +248,13 @@ const deleteSubDistributor = (sd) => {
 
 exports.registerByAdmin = (req, res, next) => {
   User.register(new User({
-    email: req.body.email.toLowerCase(),
+    username: req.body.username.toLowerCase(),
     name: req.body.name.toLowerCase(),
     phone: req.body.phone,
     role: req.body.role,
+    distributor: req.body.distributor,
+    subDistributor: req.body.subDistributor,
+    password: req.body.password
   }), req.body.password, async (err, user) => {
     if (err) {
       console.log('error', err)

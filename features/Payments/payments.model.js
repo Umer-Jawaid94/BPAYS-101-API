@@ -21,8 +21,11 @@ const payments = new Schema({
   amount: {
     type: Number
   },
+  addOn: {
+    type: Number
+  },
   phone: {
-    type: String
+    type: Number
   },
   pin: {
     type: String

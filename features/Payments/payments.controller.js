@@ -10,9 +10,25 @@ exports.createPayment = (data) => {
   }
 }
 
-exports.getAllPayments = (filter = {}) => {
+exports.getAllPayments = (filter = {}, skip = 0, limit = 25) => {
   try {
-    return payments.find(filter).populate('dealer');
+    return payments.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).populate('dealer');
+  } catch (error) {
+    console.log(error)
+    return Boom.badImplementation('Something went wrong')
+  }
+}
+exports.getPaymentsByFilter = (filter = {}) => {
+  try {
+    return payments.find(filter).sort({ createdAt: -1 }).populate('dealer');
+  } catch (error) {
+    console.log(error)
+    return Boom.badImplementation('Something went wrong')
+  }
+}
+exports.getPaymentsCount = (filter = {}) => {
+  try {
+    return payments.count(filter);
   } catch (error) {
     return Boom.badImplementation('Something went wrong')
   }
@@ -29,7 +45,7 @@ exports.updatePayment = (filter = {}, data = {}) => {
 
 exports.getPayment = (filter = {}) => {
   try {
-    return payments.findOne(filter);
+    return payments.findOne(filter).populate('dealer');
   } catch (error) {
     return Boom.badImplementation('Something went wrong')
   }

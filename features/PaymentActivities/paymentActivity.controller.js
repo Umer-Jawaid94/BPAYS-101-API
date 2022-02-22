@@ -11,7 +11,7 @@ exports.createActivity = (data) => {
 
 exports.getAllActivities = (filter = {}) => {
   try {
-    return activity.find(filter).populate('creator user');
+    return activity.find(filter).sort({createdAt:-1}).populate('creator user');
   } catch (error) {
     return Boom.badImplementation('Something went wrong')
   }
