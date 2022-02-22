@@ -10,9 +10,11 @@ const { createActivity } = require('../PaymentActivities/paymentActivity.control
 exports.register = async (req, res, next) => {
   if (!req.body.distributor) {
     const user = await getUserbyFilter({ _id: req.body.subDistributor })
-    const distributor = await getUserbyFilter({ _id: user.distributor })
-    console.log(distributor)  
-    req.body.distributor = distributor._id
+    if (user) {
+      const distributor = await getUserbyFilter({ _id: user.distributor })
+      console.log(distributor)
+      req.body.distributor = distributor._id
+    }
   }
   User.register(new User({
     username: req.body.username.toLowerCase(),
@@ -51,9 +53,6 @@ exports.register = async (req, res, next) => {
           }
           if (user.role === 'dealer') {
             // console.log('ok')
-            if (!req.body.distributor) {
-              const distributor = await getUserbyFilter({})
-            }
             const dWallet = await getWallet({ user: req.body.subDistributor })
             await createActivity({ creator: req._user._id, user, amount: req.body.amount, type: 'created', role: req._user.role })
             await createActivity({ creator: req._user._id, user, amount: req.body.amount, type: 'created', role: user.role })
