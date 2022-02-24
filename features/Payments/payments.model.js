@@ -27,10 +27,21 @@ const payments = new Schema({
   phone: {
     type: Number
   },
+  profit: {
+    type: Number
+  },
   pin: {
     type: String
   },
   dealer: {
+    type: Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  subDistributor: {
+    type: Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  distributor: {
     type: Schema.Types.ObjectId,
     ref: 'User'
   }
