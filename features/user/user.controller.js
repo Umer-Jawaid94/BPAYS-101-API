@@ -13,7 +13,7 @@ exports.getAllUsers = (filter = {}) => {
 
 exports.getUserbyFilter = (filter = {}) => {
   try {
-    return Users.findOne({ ...filter, isDeleted: false }).populate('wallet distributor subDistributor');
+    return Users.findOne({ ...filter,  }).populate('wallet distributor subDistributor');
   } catch (error) {
     return Boom.badImplementation('no user found')
   }

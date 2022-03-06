@@ -14,30 +14,40 @@ exports.getAllPayments = async (req, res, next) => {
       count: 0
     }
     if (req._user.role !== 'admin' && req._user.role !== 'processor') {
-      if (req.query.scope === 'full') {
-        data.payments = await getPaymentsByFilter({ dealer: req._user._id, sim: req.query.sim });
-      } else {
-        if (req._user.role === 'distributor') {
-          const subDistributors = await getAllUsers({ distributor: req._user._id })
-          const sDIds = subDistributors.map(sd => sd._id)
-          const dealers = await getAllUsers({ subDistributor: sDIds })
-          const dIds = dealers.map(d => d._id)
-          data.payments = await getPaymentsByFilter({ sim: req.query.sim, dealer: dIds })
-          data.count = await getPaymentsCount({ sim: req.query.sim, dealer: dIds });
-        } else if (req._user.role === 'subDistributor') {
-          const dealers = await getAllUsers({ subDistributor: req._user._id })
-          const dIds = dealers.map(d => d._id)
-          data.payments = await getPaymentsByFilter({ sim: req.query.sim, dealer: dIds })
-          data.count = await getPaymentsCount({ sim: req.query.sim, dealer: dIds });
+
+      if (req._user.role === 'distributor') {
+        const subDistributors = await getAllUsers({ distributor: req._user._id })
+        const sDIds = subDistributors.map(sd => sd._id)
+        const dealers = await getAllUsers({ subDistributor: sDIds })
+        const dIds = dealers.map(d => d._id)
+        if (req.query.scope === 'full') {
+          data.payments = await getPaymentsByFilter({ dealer: dIds, sim: req.query.sim });
         } else {
-          data.payments = await getAllPayments({ dealer: req._user._id, sim: req.query.sim }, req.query.skip * 1);
-          data.count = await getPaymentsCount({ dealer: req._user._id, sim: req.query.sim });
+          data.payments = await getAllPayments({ sim: req.query.sim, dealer: dIds }, req.query.skip * 1, req.query.limit * 1)
         }
+        data.count = await getPaymentsCount({ sim: req.query.sim, dealer: dIds });
+      } else if (req._user.role === 'subDistributor') {
+        const dealers = await getAllUsers({ subDistributor: req._user._id })
+        const dIds = dealers.map(d => d._id)
+        if (req.query.scope === 'full') {
+          data.payments = await getPaymentsByFilter({ dealer: dIds, sim: req.query.sim });
+        } else {
+          data.payments = await getAllPayments({ sim: req.query.sim, dealer: dIds }, req.query.skip * 1, req.query.limit * 1)
+        }
+        data.count = await getPaymentsCount({ sim: req.query.sim, dealer: dIds });
+      } else {
+        if (req.query.scope === 'full') {
+          data.payments = await getPaymentsByFilter({ dealer: req._user._id, sim: req.query.sim });
+        } else {
+          data.payments = await getAllPayments({ dealer: req._user._id, sim: req.query.sim }, req.query.skip * 1, req.query.limit * 1);
+        }
+        data.count = await getPaymentsCount({ dealer: req._user._id, sim: req.query.sim });
       }
+
     } else if (req.query.scope === 'full') {
       data.payments = await getPaymentsByFilter({ sim: req.query.sim });
     } else {
-      data.payments = await getAllPayments({ sim: req.query.sim }, req.query.skip * 1);
+      data.payments = await getAllPayments({ sim: req.query.sim }, req.query.skip * 1, req.query.limit * 1);
       data.count = await getPaymentsCount({ sim: req.query.sim });
     }
     return res.json({
@@ -55,8 +65,8 @@ exports.createPayment = async (req, res, next) => {
       req.body.addOn = 0
     }
     const user = await getUserbyFilter({ _id: req.body.dealer })
-    const subDistributor = await getUserbyFilter({ _id: user.subDistributor })
-    const distributor = await getUserbyFilter({ _id: subDistributor.distributor })
+    const subDistributor = await getUserbyFilter({ _id: user.subDistributor._id })
+    const distributor = await getUserbyFilter({ _id: subDistributor.distributor._id })
     const wallet = await getWallet({ user: req.body.dealer })
     let amount = wallet.amount - (req.body.amount + req.body.addOn)
     if (amount >= 0) {
@@ -86,20 +96,21 @@ exports.updatePayment = async (req, res, next) => {
     const wallet = await getWallet({ user: req.body.dealer })
     const user = await getUserbyFilter({ _id: req.body.dealer })
 
-    const difference = prevPayment.amount - (req.body.amount + req.body.addOn);
+    const difference = (prevPayment.amount + prevPayment.addOn) - (req.body.amount + req.body.addOn);
 
-    if (difference !== 0) {
+    if (difference !== 0 && prevPayment.status === 'pending') {
       await updateWallet({ _id: wallet._id }, { amount: wallet.amount + difference })
     }
-    if (req.body.status === 'rejected' || req.body.status === 'cancelled') {
+    if (req.body.status === 'rejected' || req.body.status === 'cancelled' || req.body.status === 'refunded') {
       await updateWallet({ _id: wallet._id }, { amount: wallet.amount + req.body.amount + req.body.addOn })
-      if (req.body.status === 'cancelled') {
+      if (req.body.status === 'cancelled' || req.body.status === 'refunded') {
         await createActivity({ creator: req._user, user, amount: req.body.amount + req.body.addOn, type: `payment-${req.body.status}`, role: user.role })
       } else {
         await createActivity({ creator: req._user, user, amount: req.body.amount + req.body.addOn, type: `payment-${req.body.status}`, role: req._user.role })
         await createActivity({ creator: req._user, user, amount: req.body.amount + req.body.addOn, type: `payment-${req.body.status}`, role: user.role })
       }
     }
+
     if (req.body.status === 'completed') {
       await createActivity({ creator: req._user, user, amount: req.body.amount + req.body.addOn, type: 'payment-completed', role: req._user.role })
       await createActivity({ creator: req._user, user, amount: req.body.amount + req.body.addOn, type: 'payment-completed', role: user.role })

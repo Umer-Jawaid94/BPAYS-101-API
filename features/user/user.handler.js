@@ -275,3 +275,20 @@ exports.registerByAdmin = (req, res, next) => {
       });
   });
 }
+
+exports.changePassword = async (req, res, next) => {
+  try {
+    const user = await getUserbyFilter({ _id: req._user._id })
+    user.changePassword(req.body.oldPassword, req.body.newPassword, async function (err) {
+      if (err) {
+        return next(Boom.badImplementation(error))
+      }
+      await updateUser({ _id: req._user._id }, { password: req.body.newPassword })
+      return res.json({
+        data: 'done'
+      })
+    })
+  } catch (error) {
+    return next(Boom.badImplementation(error))
+  }
+}

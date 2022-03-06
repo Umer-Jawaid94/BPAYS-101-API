@@ -4,6 +4,7 @@ const userRoutes = require('../features/user/user.routes');
 const walletRoutes = require('../features/Wallet/wallet.routes');
 const activitiesRouts = require('../features/PaymentActivities/paymentActivity.routes');
 const paymentRoutes = require('../features/Payments/payments.routes');
+const configRoutes = require('../features/Config/config.routes');
 
 module.exports = function (app) {
   const router = express.Router();
@@ -11,6 +12,7 @@ module.exports = function (app) {
   router.use('/wallets', walletRoutes)
   router.use('/activities', activitiesRouts)
   router.use('/payments', paymentRoutes)
+  router.use('/configs', configRoutes)
   app.get(`/health`, function (req, res) {
     // TOD Ping DB
     res.json({

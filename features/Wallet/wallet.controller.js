@@ -31,7 +31,7 @@ exports.getWallet = (filter = {}) => {
 
 exports.deleteWallet = (filter = {}) => {
   try {
-    return Wallet.findOneAndDelete(filter, { isDeleted: true });
+    return Wallet.findOneAndUpdate(filter, { isDeleted: true });
   } catch (error) {
     return Boom.badImplementation('Something went wrong')
   }
