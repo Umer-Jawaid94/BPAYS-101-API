@@ -2,6 +2,15 @@
 const Boom = require('boom');
 const configs = require('./config.model');
 
+exports.createConfigs = (filter = {},) => {
+  try {
+    return configs.create({});
+  } catch (error) {
+    console.log(error)
+    return Boom.badImplementation('Something went wrong')
+  }
+}
+
 
 exports.getConfigs = (filter = {},) => {
   try {

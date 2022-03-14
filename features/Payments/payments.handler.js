@@ -1,9 +1,10 @@
 
 const Boom = require('boom');
+const moment = require('moment');
 const { createActivity } = require('../PaymentActivities/paymentActivity.controller');
 const { getUserbyFilter, getAllUsers } = require('../user/user.controller');
 
-const { createWallet, updateWallet, getWallet, deleteWallet } = require('../Wallet/wallet.controller');
+const { updateWallet, getWallet } = require('../Wallet/wallet.controller');
 const { createPayment, getAllPayments, getPayment, updatePayment, getPaymentsCount, getPaymentsByFilter } = require('./payments.controller');
 
 
@@ -13,6 +14,24 @@ exports.getAllPayments = async (req, res, next) => {
       payments: [],
       count: 0
     }
+    let query = {
+      sim: req.query.sim
+    }
+    if (req.query.query) {
+      const q = JSON.parse(req.query.query)
+      if (q.status) {
+        query.status = q.status
+      }
+      if (q.role) {
+        query.role = q.role
+      }
+      if (q.date) {
+        let start = moment(q.date[0]).startOf('D').format().split('+')[0]
+        let end = moment(q.date[1]).endOf('D').format().split('+')[0]
+        query.updatedAt = { $gte: start, $lte: end }
+      }
+    }
+
     if (req._user.role !== 'admin' && req._user.role !== 'processor') {
 
       if (req._user.role === 'distributor') {
@@ -21,34 +40,34 @@ exports.getAllPayments = async (req, res, next) => {
         const dealers = await getAllUsers({ subDistributor: sDIds })
         const dIds = dealers.map(d => d._id)
         if (req.query.scope === 'full') {
-          data.payments = await getPaymentsByFilter({ dealer: dIds, sim: req.query.sim });
+          data.payments = await getPaymentsByFilter({ dealer: dIds, ...query });
         } else {
-          data.payments = await getAllPayments({ sim: req.query.sim, dealer: dIds }, req.query.skip * 1, req.query.limit * 1)
+          data.payments = await getAllPayments({ ...query, dealer: dIds }, req.query.skip * 1, req.query.limit * 1)
         }
-        data.count = await getPaymentsCount({ sim: req.query.sim, dealer: dIds });
+        data.count = await getPaymentsCount({ ...query, dealer: dIds });
       } else if (req._user.role === 'subDistributor') {
         const dealers = await getAllUsers({ subDistributor: req._user._id })
         const dIds = dealers.map(d => d._id)
         if (req.query.scope === 'full') {
-          data.payments = await getPaymentsByFilter({ dealer: dIds, sim: req.query.sim });
+          data.payments = await getPaymentsByFilter({ dealer: dIds, ...query });
         } else {
-          data.payments = await getAllPayments({ sim: req.query.sim, dealer: dIds }, req.query.skip * 1, req.query.limit * 1)
+          data.payments = await getAllPayments({ ...query, dealer: dIds }, req.query.skip * 1, req.query.limit * 1)
         }
-        data.count = await getPaymentsCount({ sim: req.query.sim, dealer: dIds });
+        data.count = await getPaymentsCount({ ...query, dealer: dIds });
       } else {
         if (req.query.scope === 'full') {
-          data.payments = await getPaymentsByFilter({ dealer: req._user._id, sim: req.query.sim });
+          data.payments = await getPaymentsByFilter({ dealer: req._user._id, ...query });
         } else {
-          data.payments = await getAllPayments({ dealer: req._user._id, sim: req.query.sim }, req.query.skip * 1, req.query.limit * 1);
+          data.payments = await getAllPayments({ dealer: req._user._id, ...query }, req.query.skip * 1, req.query.limit * 1);
         }
-        data.count = await getPaymentsCount({ dealer: req._user._id, sim: req.query.sim });
+        data.count = await getPaymentsCount({ dealer: req._user._id, ...query });
       }
 
     } else if (req.query.scope === 'full') {
-      data.payments = await getPaymentsByFilter({ sim: req.query.sim });
+      data.payments = await getPaymentsByFilter({ ...query });
     } else {
-      data.payments = await getAllPayments({ sim: req.query.sim }, req.query.skip * 1, req.query.limit * 1);
-      data.count = await getPaymentsCount({ sim: req.query.sim });
+      data.payments = await getAllPayments({ ...query }, req.query.skip * 1, req.query.limit * 1);
+      data.count = await getPaymentsCount({ ...query });
     }
     return res.json({
       data
@@ -111,10 +130,11 @@ exports.updatePayment = async (req, res, next) => {
       }
     }
 
-    if (req.body.status === 'completed') {
-      await createActivity({ creator: req._user, user, amount: req.body.amount + req.body.addOn, type: 'payment-completed', role: req._user.role })
-      await createActivity({ creator: req._user, user, amount: req.body.amount + req.body.addOn, type: 'payment-completed', role: user.role })
+    if (req.body.status === 'completed' || req.body.status === 'in-progress') {
+      await createActivity({ creator: req._user, user, amount: req.body.amount + req.body.addOn, type: `payment-${req.body.status}`, role: req._user.role })
+      await createActivity({ creator: req._user, user, amount: req.body.amount + req.body.addOn, type: `payment-${req.body.status}`, role: user.role })
     }
+
     const data = await updatePayment({ _id: prevPayment._id }, { ...req.body })
     return res.json({
       data

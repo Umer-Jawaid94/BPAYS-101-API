@@ -1,9 +1,13 @@
 const Boom = require("boom")
-const { getConfigs, updateConfigs } = require("./config.controller")
+const { getConfigs, updateConfigs, createConfigs } = require("./config.controller")
 
 exports.getConfigs = async (req, res, next) => {
   try {
-    const data = await getConfigs()
+    let data
+    data = await getConfigs()
+    if (!data) {
+      data = await createConfigs()
+    }
     return res.json({
       data
     })
