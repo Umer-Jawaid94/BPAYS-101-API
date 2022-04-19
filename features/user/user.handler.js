@@ -173,6 +173,7 @@ exports.verifyUser = async (req, res, next) => {
 exports.updateUser = async (req, res, next) => {
   try {
     const data = { ...req.body }
+    data.name = data.name.toLowerCase()
     if (req.body.amount) {
       delete data.amount
       await updateWallet({ user: req.params.id }, { amount: req.body.amount })
@@ -287,6 +288,24 @@ exports.changePassword = async (req, res, next) => {
       return res.json({
         data: 'done'
       })
+    })
+  } catch (error) {
+    return next(Boom.badImplementation(error))
+  }
+}
+
+exports.searchUser = async (req, res, next) => {
+  try {
+    let query = {}
+    if (req.query.search) {
+      query.name = { $regex: req.query.search }
+    }
+    if (req.query.role) {
+      query.role = req.query.role
+    }
+    const users = await getAllUsers({ ...query })
+    return res.json({
+      data: users
     })
   } catch (error) {
     return next(Boom.badImplementation(error))

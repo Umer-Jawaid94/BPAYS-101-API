@@ -26,14 +26,22 @@ exports.getAllPayments = async (req, res, next) => {
         query.role = q.role
       }
       if (q.date) {
-        let start = moment(q.date[0]).startOf('D').format().split('+')[0]
-        let end = moment(q.date[1]).endOf('D').format().split('+')[0]
+        let start = q.date[0]
+        let end = q.date[1]
         query.updatedAt = { $gte: start, $lte: end }
+      }
+      if (q.user) {
+        const user = JSON.parse(q.user)
+        query['$or'] = [{
+          [user.role]: user.user
+        }]
+      }
+      if (q.plan) {
+        query.plan = q.plan
       }
     }
 
     if (req._user.role !== 'admin' && req._user.role !== 'processor') {
-
       if (req._user.role === 'distributor') {
         const subDistributors = await getAllUsers({ distributor: req._user._id })
         const sDIds = subDistributors.map(sd => sd._id)
@@ -66,6 +74,7 @@ exports.getAllPayments = async (req, res, next) => {
     } else if (req.query.scope === 'full') {
       data.payments = await getPaymentsByFilter({ ...query });
     } else {
+
       data.payments = await getAllPayments({ ...query }, req.query.skip * 1, req.query.limit * 1);
       data.count = await getPaymentsCount({ ...query });
     }
